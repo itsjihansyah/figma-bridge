@@ -1,0 +1,16 @@
+# Secrets — never commit
+CHANNEL_TOKEN.txt
+*.token
+.env
+.env.*
+!.env.example
+
+# Build / tooling
+node_modules/
+.wrangler/
+.dev.vars
+
+# Local artifacts
+*.zip
+*.png
+.DS_Store

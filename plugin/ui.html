@@ -1,0 +1,60 @@
+<style>
+  body { font: 12px Inter, system-ui, sans-serif; margin: 12px; color: #222; }
+  label { display: block; margin: 6px 0 2px; color: #666; }
+  input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+  button { margin-top: 10px; padding: 6px 12px; border: 0; border-radius: 4px; background: #0d99ff; color: #fff; cursor: pointer; }
+  #status { margin-top: 10px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #bbb; margin-right: 6px; }
+  .on .dot { background: #14ae5c; } .off .dot { background: #f24822; }
+</style>
+<label>Relay URL</label><input id="url" placeholder="https://figma-bridge.<you>.workers.dev" />
+<label>Channel token</label><input id="token" type="password" />
+<button id="connect">Connect</button>
+<div id="status"><span class="dot"></span><span id="text">Not connected</span></div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let ws, pingTimer, retryTimer, settings = {}, runs = 0;
+
+  function setStatus(state, text) { $("status").className = state; $("text").textContent = text; }
+
+  function connect() {
+    clearTimeout(retryTimer); clearInterval(pingTimer);
+    if (ws) { ws.onclose = null; ws.close(); }
+    if (!settings.url || !settings.token) return setStatus("off", "Enter relay URL and token");
+    const wsUrl = settings.url.replace(/^http/, "ws").replace(/\/$/, "") + "/ws?token=" + encodeURIComponent(settings.token);
+    setStatus("", "Connecting…");
+    ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      setStatus("on", "Connected — Claude can design live");
+      pingTimer = setInterval(() => ws.readyState === 1 && ws.send('{"type":"ping"}'), 20000);
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === "run") { runs++; setStatus("on", "Connected — " + runs + " commands run"); parent.postMessage({ pluginMessage: msg }, "*"); }
+    };
+    ws.onclose = (e) => {
+      clearInterval(pingTimer);
+      if (e.code === 4000) return setStatus("off", "Replaced by another Figma window");
+      setStatus("off", "Disconnected — retrying…");
+      retryTimer = setTimeout(connect, 3000);
+    };
+  }
+
+  window.onmessage = (e) => {
+    const msg = e.data.pluginMessage;
+    if (!msg) return;
+    if (msg.type === "settings") {
+      settings = msg.settings; $("url").value = settings.url || ""; $("token").value = settings.token || "";
+      connect();
+    }
+    if (msg.type === "result" && ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
+  };
+
+  $("connect").onclick = () => {
+    settings = { url: $("url").value.trim(), token: $("token").value.trim() };
+    parent.postMessage({ pluginMessage: { type: "settings:save", settings } }, "*");
+    connect();
+  };
+
+  parent.postMessage({ pluginMessage: { type: "settings:load" } }, "*");
+</script>
