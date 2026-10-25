@@ -57,7 +57,7 @@ The channel token is the shared secret: the agent and the plugin connect to the 
 |---|---|
 | **Figma desktop app** | Development plugins don't run in the browser |
 | **Node.js 18+** | To deploy the relay and to use the CLI |
-| **Cloudflare account** (free) | To host the relay. Your email must be verified. |
+| **Cloudflare account** (free) | To host the relay. [Sign up here](https://dash.cloudflare.com/sign-up). Your email must be verified. |
 | **An AI agent with shell access** | Claude Code, Cursor, Codex, … Plain chat apps without tool access can't reach the relay. |
 
 ## What's included vs. what you set up
@@ -80,6 +80,14 @@ The channel token is the shared secret: the agent and the plugin connect to the 
 
 ### Step 1: Deploy the relay
 
+**1a. Create a free Cloudflare account** (skip this if you already have one)
+
+1. Sign up at **[dash.cloudflare.com/sign-up](https://dash.cloudflare.com/sign-up)**. The Free plan is enough, and no credit card is needed.
+2. **Verify your email.** Open the verification email from Cloudflare and click the link. Deploys fail with error `10034` until you do. If the email didn't arrive, resend it from **[My Profile](https://dash.cloudflare.com/profile)**.
+3. You don't need to add a website or domain. Skip that step if the dashboard suggests it.
+
+**1b. Deploy**
+
 ```bash
 git clone https://github.com/itsjihansyah/figma-bridge.git
 cd figma-bridge/relay
@@ -87,7 +95,8 @@ npx wrangler login     # a browser window opens → click Allow
 npx wrangler deploy    # prints https://figma-bridge.<your-subdomain>.workers.dev
 ```
 
-- If Wrangler asks you to register a `workers.dev` subdomain, choose any name.
+- `wrangler login` opens a browser. Sign in with the Cloudflare account from 1a and click **Allow**.
+- If Wrangler asks you to register a `workers.dev` subdomain, choose any name. You can also set it in the dashboard under **[Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages)**.
 - Open the printed URL in a browser. It should show `figma-bridge relay ok`. DNS can take a few minutes.
 
 > **Sharing with a team?** One relay can serve many people. Everyone just needs their **own** token, because each token is a separate channel.
@@ -211,7 +220,7 @@ The relay itself needs no configuration. Its name and Durable Object binding are
 | The plugin says "Disconnected — retrying…" | Network drop, sleep, or VPN off. It reconnects automatically every 3 s. |
 | `Plugin not connected` error | Re-run **Claude Bridge** in Figma. |
 | `Timed out after …ms` | The script did too much in one call. Split the work into smaller calls. |
-| `wrangler deploy` fails with "verify your email address" (code 10034) | Verify your Cloudflare account email, then run `npx wrangler deploy` again. |
+| `wrangler deploy` fails with "verify your email address" (code 10034) | Verify your Cloudflare account email (resend it from [My Profile](https://dash.cloudflare.com/profile)), then run `npx wrangler deploy` again. |
 | `wrangler deploy` warns about a `workers.dev` subdomain | Register one when prompted, or in the Cloudflare dashboard under **Workers → Subdomain**. |
 
 ---
